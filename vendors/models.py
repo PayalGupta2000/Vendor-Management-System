@@ -16,26 +16,26 @@ class Vendor(models.Model):
     def __str__(self):
         return self.name
     
-    def update_metrics(self):
-        completed_pos = self.purchaseorder_set.filter(status='completed')
-        total_completed_pos = completed_pos.count()
+    # def update_metrics(self):
+    #     completed_pos = self.purchaseorder_set.filter(status='completed')
+    #     total_completed_pos = completed_pos.count()
 
-        # On-Time Delivery Rate
-        on_time_deliveries = completed_pos.filter(delivery_date__lte=timezone.now())
-        self.on_time_delivery_rate = (on_time_deliveries.count() / total_completed_pos) * 100 if total_completed_pos else 0
+    #     # On-Time Delivery Rate
+    #     on_time_deliveries = completed_pos.filter(delivery_date__lte=timezone.now())
+    #     self.on_time_delivery_rate = (on_time_deliveries.count() / total_completed_pos) * 100 if total_completed_pos else 0
 
-        # Quality Rating Average
-        self.quality_rating_avg = completed_pos.filter(quality_rating__isnull=False).aggregate(Avg('quality_rating'))['quality_rating__avg'] or 0.0
+    #     # Quality Rating Average
+    #     self.quality_rating_avg = completed_pos.filter(quality_rating__isnull=False).aggregate(Avg('quality_rating'))['quality_rating__avg'] or 0.0
 
-        # Average Response Time
-        response_times = completed_pos.filter(acknowledgment_date__isnull=False).annotate(response_time=models.F('acknowledgment_date') - models.F('issue_date'))
-        self.average_response_time = response_times.aggregate(Avg('response_time'))['response_time__avg'].total_seconds() if response_times else 0.0
+    #     # Average Response Time
+    #     response_times = completed_pos.filter(acknowledgment_date__isnull=False).annotate(response_time=models.F('acknowledgment_date') - models.F('issue_date'))
+    #     self.average_response_time = response_times.aggregate(Avg('response_time'))['response_time__avg'].total_seconds() if response_times else 0.0
 
-        # Fulfilment Rate
-        successful_fulfillments = completed_pos.filter(status='completed', quality_rating__isnull=True)
-        self.fulfillment_rate = (successful_fulfillments.count() / total_completed_pos) * 100 if total_completed_pos else 0
+    #     # Fulfilment Rate
+    #     successful_fulfillments = completed_pos.filter(status='completed', quality_rating__isnull=True)
+    #     self.fulfillment_rate = (successful_fulfillments.count() / total_completed_pos) * 100 if total_completed_pos else 0
 
-        self.save()
+    #     self.save()
 
 class PurchaseOrder(models.Model):
     po_number=models.CharField(max_length=20)
@@ -51,15 +51,13 @@ class PurchaseOrder(models.Model):
 
     def __str__(self):
         return self.po_number
-    
-    
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     super().save(*args, **kwargs)
 
-        # Update vendor metrics upon PO completion
-        if self.status == 'completed':
-            self.vendor.update_metrics()
+    #     # Update vendor metrics upon PO completion
+    #     if self.status == 'completed':
+    #         self.vendor.update_metrics()
     
 class HistoricalPerformance(models.Model):
     vendor=models.ForeignKey(Vendor,on_delete=models.CASCADE)
