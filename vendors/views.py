@@ -9,13 +9,59 @@ import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
+
+
+class LoginAPI(APIView):
+
+    def post(self,request):
+        try:
+            serializer = LoginSerializer(data = request.data)
+            if serializer.is_valid():
+                email = serializer.data['email']
+                print(email)
+                password = serializer.data['password']
+
+                user = authenticate(request = request, email = email, password = password)
+
+                if user is None:
+                    print(user)
+                    return Response({
+                        'status' : 400,
+                        'message': 'Invalid Password',
+                        'data': serializer.errors
+                    })
+                
+                if user.is_delete is True:
+                    
+                    return Response({
+                        'status' : 400,
+                        'message': 'User is already deleted',
+                        'data': serializer.errors
+                    })
+
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                })
+            return Response(serializer.errors,status=400)
+        except Exception as e:
+            return Response({'error':str(e)})
 
 class VenorAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (JWTAuthentication,)
 
     def get(self,request):
         try:
             vendor_id = self.request.query_params.get('vendor_id')
-            vendor=Vendor.objects.filter(id=vendor_id).last()
+            vendor=Vendor.objects.get(id=vendor_id)
             serializer=VendorSerializer(vendor, many=False)
             return Response(serializer.data)
         except:
@@ -31,13 +77,20 @@ class VenorAPIView(APIView):
         return Response({'error': serializer.errors, 'success':False}, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self,request):
-        vendor_id = self.request.query_params.get('vendor_id')
-        vendor=Vendor.objects.filter(id=vendor_id).last()
-        serializer=VendorSerializer(instance=vendor,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'msg':'Vendor Updated Successfully','success':True}, status=status.HTTP_201_CREATED)
-        return Response({'error': serializer.errors, 'success':False}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            vendor_id = self.request.query_params.get('vendor_id')
+            vendor=Vendor.objects.get(id=vendor_id)
+            serializer=VendorSerializer(instance=vendor,data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'msg':'Vendor Updated Successfully','success':True}, status=status.HTTP_201_CREATED)
+            return Response({'error': serializer.errors, 'success':False}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'status':status.HTTP_400_BAD_REQUEST,
+                'success': False,
+                'error': str(e)
+            })
     
     def delete(self,request):
         vendor_id = self.request.query_params.get('vendor_id')
@@ -50,7 +103,7 @@ class PurchaseOrderAPIView(APIView):
     def get(self,request):
         try:
             po_id = self.request.query_params.get('po_id')
-            purchase_orders=PurchaseOrder.objects.filter(id = po_id).last()
+            purchase_orders=PurchaseOrder.objects.get(id = po_id)
             serializer=PurchaseOrderSerializer(purchase_orders,many=False)
             return Response(serializer.data)
         except:

@@ -1,6 +1,16 @@
 from django.db import models
 from django.db.models import Count, Avg, Sum
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+
+
+class User(AbstractUser):
+    username = None
+    email = models.EmailField(unique=True)
+    is_delete = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
 types_of_status = (('Fulfilled','Fulfilled'),)
 class Vendor(models.Model):
@@ -12,7 +22,7 @@ class Vendor(models.Model):
     quality_rating_average=models.FloatField(default=0.0)
     average_response_time=models.FloatField(default=0.0)
     fulfillment_rate=models.FloatField(default=0.0)
-    status = models.CharField(max_length=50, choices=types_of_status)
+    status = models.CharField(max_length=50, choices=types_of_status, blank=True, null=True)
 
     def __str__(self):
         return self.name
